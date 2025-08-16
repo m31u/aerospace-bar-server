@@ -1,0 +1,11 @@
+{
+  "name": "bar-server",
+  "module": "index.ts",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "type": "module"
+}
