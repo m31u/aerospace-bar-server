@@ -5,28 +5,9 @@ const BIN = "/Users/blu/bin"
 const JQ = "/usr/bin/jq"
 
 function workspaceCommand(): ReturnType<$> {
-  return $`echo "$(${AEROSPACE} list-workspaces --monitor 1 --empty no --json)$(${AEROSPACE} list-workspaces --focused --json)$(${AEROSPACE} list-workspaces --all --json)" | ${JQ} -s '
-  (.[0] | map(.workspace|tostring)) as $occupied
-  | (.[1] | map(.workspace|tostring)) as $focused
-  | .[2] | map(
-      . + {
-        empty:   ((.workspace|tostring) as $w | ($occupied | index($w) | not)),
-        focused: ((.workspace|tostring) as $w | ($focused  | index($w) | not) | not)
-      }
-    )
-'`
-}
-
-function windowsCommand(): ReturnType<$> {
-  return $`echo $(${AEROSPACE} list-windows --focused --json || echo "[]")$(${AEROSPACE} list-windows --workspace $(${AEROSPACE} list-workspaces --focused) --json) | ${JQ} -s '
-  (.[0] | map(.["window-id"])) as $focused_ids
-  | .[1] | map({
-      app: .["app-name"],
-      id: .["window-id"],
-      title: .["window-title"],
-      focused: (.["window-id"] as $id | ($focused_ids | index($id) | not) | not)
-    })
-'`
+  return $`echo "$(${AEROSPACE} list-workspaces --all --json --format "%{workspace}%{workspace-is-focused}")$(${AEROSPACE} list-windows --all --json --format "%{window-id}%{app-name}%{workspace}" )" | ${JQ} -s '.[0] as $workspaces | .[1] | map({ app: .["app-name"], id: .["window-id"], workspace: .["workspace"]}) as $apps
+    | $workspaces
+    | map(. as $w | { workspace: $w.["workspace"], focused: $w.["workspace-is-focused"], windows: ($apps | map(select(.workspace == $w.workspace)))})'`
 }
 
 function batteryCommand(): ReturnType<$> {
