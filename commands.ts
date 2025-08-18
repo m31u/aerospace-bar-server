@@ -10,12 +10,9 @@ function workspaceCommand(): ReturnType<$> {
     | map(. as $w | { workspace: $w.["workspace"], focused: $w.["workspace-is-focused"], windows: ($apps | map(select(.workspace == $w.workspace)))})'`
 }
 
-function getAllAppsCommand() {
-  return $`find /Applications /System/Applications Users/blu/Applications -name "*.app" -maxdepth 2 2>/dev/null | tr '\n' '\0' | xargs -0 -I{} basename -s .app {} |  sed 's/.*/"&"/' | jq -s`
-}
 
 function batteryCommand(): ReturnType<$> {
   return $`${BIN}/batterymonitord --get`
 }
 
-export { AEROSPACE, BIN, workspaceCommand, batteryCommand, getAllAppsCommand } 
+export { AEROSPACE, BIN, workspaceCommand, batteryCommand } 

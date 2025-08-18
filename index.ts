@@ -1,5 +1,5 @@
 import { serve, $ } from 'bun'
-import { workspaceCommand, windowsCommand, batteryCommand, getAllAppsCommand } from './commands.ts'
+import { workspaceCommand, batteryCommand } from './commands.ts'
 
 const server = serve({
 	routes: {
@@ -30,7 +30,6 @@ const server = serve({
 			ws.subscribe("state")
 			battery()
 			workspaces()
-			apps()
 		},
 		message(_, message) {
 			console.log(`client sent message: ${message}`)
@@ -47,6 +46,5 @@ function ShellCommandPublisher(shellOutput: () => ReturnType<$>, payloadType: st
 	}
 }
 
-const apps = ShellCommandPublisher(getAllAppsCommand, "UPDATE_APP_LIST")
 const battery = ShellCommandPublisher(batteryCommand, "UPDATE_BATTERY")
 const workspaces = ShellCommandPublisher(workspaceCommand, "UPDATE_WORKSPACES")
