@@ -1,5 +1,6 @@
 import { serve, $ } from 'bun'
 import { workspaceCommand, batteryCommand } from './commands.ts'
+import { server } from 'typescript'
 
 const server = serve({
 	routes: {
@@ -12,10 +13,22 @@ const server = serve({
 			server.publish("state", JSON.stringify({ type: command }))
 			return new Response("success")
 		},
-		"/update-battery": async (req, server) => {
-			let data = await req.json()
-			server.publish("state", JSON.stringify({ type: "UPDATE_BATTERY", data }))
-			return new Response("success")
+		"/update-battery": (req, server) => {
+			return req.json()
+				.then(data => {
+					server.publish("state", JSON.stringify({ type: "UPDATE_BATTERY", data }))
+					return new Response("success")
+				})
+				.catch(error => {
+					return new Response(String(error), { status: 401 })
+				})
+		},
+		"/heartbeat": () => {
+			const res = new Response("alive")
+
+			res.headers.set('Access-Control-Allow-Origin', '*')
+
+			return res
 		},
 		"/listen": (req, server) => {
 			if (server.upgrade(req)) {
