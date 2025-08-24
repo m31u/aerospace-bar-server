@@ -1,6 +1,5 @@
 import { serve, $ } from 'bun'
 import { workspaceCommand, batteryCommand } from './commands.ts'
-import { server } from 'typescript'
 
 const server = serve({
 	routes: {
@@ -17,6 +16,16 @@ const server = serve({
 			return req.json()
 				.then(data => {
 					server.publish("state", JSON.stringify({ type: "UPDATE_BATTERY", data }))
+					return new Response("success")
+				})
+				.catch(error => {
+					return new Response(String(error), { status: 401 })
+				})
+		},
+		"/update-network": (req, server) => {
+			return req.text()
+				.then(data => {
+					server.publish("state", data)
 					return new Response("success")
 				})
 				.catch(error => {
