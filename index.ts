@@ -12,20 +12,11 @@ const server = serve({
 			server.publish("state", JSON.stringify({ type: command }))
 			return new Response("success")
 		},
-		"/update-battery": (req, server) => {
+		"/update": (req, server) => {
+			const type = (new URL(req.url).searchParams.get("event"))
 			return req.json()
 				.then(data => {
-					server.publish("state", JSON.stringify({ type: "UPDATE_BATTERY", data }))
-					return new Response("success")
-				})
-				.catch(error => {
-					return new Response(String(error), { status: 401 })
-				})
-		},
-		"/update-network": (req, server) => {
-			return req.text()
-				.then(data => {
-					server.publish("state", data)
+					server.publish("state", JSON.stringify(type ? { type, data } : data))
 					return new Response("success")
 				})
 				.catch(error => {
