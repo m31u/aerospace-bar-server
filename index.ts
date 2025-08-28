@@ -1,4 +1,4 @@
-import { serve, $ } from 'bun'
+import { serve, $, type ServerWebSocket } from 'bun'
 import { workspaceCommand, batteryCommand } from './commands.ts'
 
 const server = serve({
@@ -11,17 +11,6 @@ const server = serve({
 			const command = (new URL(req.url)).searchParams.get("command")
 			server.publish("state", JSON.stringify({ type: command }))
 			return new Response("success")
-		},
-		"/update": (req, server) => {
-			const type = (new URL(req.url).searchParams.get("event"))
-			return req.json()
-				.then(data => {
-					server.publish("state", JSON.stringify(type ? { type, data } : data))
-					return new Response("success")
-				})
-				.catch(error => {
-					return new Response(String(error), { status: 401 })
-				})
 		},
 		"/heartbeat": () => {
 			const res = new Response("alive")
@@ -39,16 +28,55 @@ const server = serve({
 		}
 	},
 	websocket: {
-		open(ws) {
-			ws.subscribe("state")
-			battery()
-			workspaces()
+		open(_) {
+			return
 		},
-		message(_, message) {
-			console.log(`client sent message: ${message}`)
+		message(ws, message) {
+			const data = JSON.parse(message.toString())
+
+			if (isRegisterMessage(data)) {
+				handleRegisterNewConnection(ws, data)
+			}
+
+			if (isDaemonPayload(data)) {
+				server.publish("state", JSON.stringify(data.payload))
+			}
+
 		}
 	}
 })
+
+function handleRegisterNewConnection(ws: ServerWebSocket<unknown>, data: RegisterMessage) {
+	if (data.type === "daemon") {
+		ws.subscribe("client_connection")
+		server.publish("state", JSON.stringify({ type: "REGISTER_DAEMON", name: data.name }))
+	}
+
+	if (data.type === "client") {
+		ws.subscribe("state")
+		workspaces()
+		server.publish("client_connection", JSON.stringify({ type: "REGISTER_CLIENT", name: data.name }))
+	}
+}
+
+type RegisterMessage = {
+	type: "daemon" | "client",
+	name: String
+}
+
+function isRegisterMessage(data: any): data is RegisterMessage {
+	return data.hasOwnProperty("type") &&
+		(data.type == "daemon" || data.type == "client") &&
+		data.hasOwnProperty("name")
+}
+
+type DaemonPayload = {
+	payload: any
+}
+
+function isDaemonPayload(data: any): data is DaemonPayload {
+	return data.hasOwnProperty("payload")
+}
 
 function ShellCommandPublisher(shellOutput: () => ReturnType<$>, payloadType: string): () => void {
 	return () => {
@@ -59,5 +87,4 @@ function ShellCommandPublisher(shellOutput: () => ReturnType<$>, payloadType: st
 	}
 }
 
-const battery = ShellCommandPublisher(batteryCommand, "UPDATE_BATTERY")
 const workspaces = ShellCommandPublisher(workspaceCommand, "UPDATE_WORKSPACES")

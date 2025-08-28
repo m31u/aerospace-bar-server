@@ -11,8 +11,5 @@ function workspaceCommand(): ReturnType<$> {
 }
 
 
-function batteryCommand(): ReturnType<$> {
-  return $`${BIN}/batterymonitord --get`
-}
 
-export { AEROSPACE, BIN, workspaceCommand, batteryCommand } 
+export { AEROSPACE, BIN, workspaceCommand } 
