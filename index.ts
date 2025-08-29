@@ -1,5 +1,5 @@
 import { serve, $, type ServerWebSocket } from 'bun'
-import { workspaceCommand, batteryCommand } from './commands.ts'
+import { workspaceCommand } from './commands.ts'
 
 const server = serve({
 	routes: {
@@ -28,7 +28,8 @@ const server = serve({
 		}
 	},
 	websocket: {
-		open(_) {
+		open(ws) {
+			ws.send(JSON.stringify({ message: "WAITING_FOR_REGISTRATION" }))
 			return
 		},
 		message(ws, message) {
@@ -57,6 +58,8 @@ function handleRegisterNewConnection(ws: ServerWebSocket<unknown>, data: Registe
 		workspaces()
 		server.publish("client_connection", JSON.stringify({ type: "REGISTER_CLIENT", name: data.name }))
 	}
+
+	ws.send(JSON.stringify({ message: `${data.type.toUpperCase()}_REGISTRATION_COMPLETE` }))
 }
 
 type RegisterMessage = {
