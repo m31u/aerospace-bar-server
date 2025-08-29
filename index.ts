@@ -39,7 +39,7 @@ const server = serve({
 			}
 
 			if (isDaemonPayload(data)) {
-				server.publish("state", JSON.stringify(data.payload))
+				server.publish("state", JSON.stringify(data))
 			}
 
 		}
@@ -49,7 +49,7 @@ const server = serve({
 function handleRegisterNewConnection(ws: ServerWebSocket<unknown>, data: RegisterMessage) {
 	if (data.type === "daemon") {
 		ws.subscribe("client_connection")
-		server.publish("state", JSON.stringify({ type: "REGISTER_DAEMON", name: data.name }))
+		server.publish("state", JSON.stringify({ type: "REGISTER_DAEMON", data: data.name }))
 	}
 
 	if (data.type === "client") {
@@ -71,11 +71,12 @@ function isRegisterMessage(data: any): data is RegisterMessage {
 }
 
 type DaemonPayload = {
-	payload: any
+	type: String,
+	data: any
 }
 
 function isDaemonPayload(data: any): data is DaemonPayload {
-	return data.hasOwnProperty("payload")
+	return data.hasOwnProperty("type") && data.hasOwnProperty("data")
 }
 
 function ShellCommandPublisher(shellOutput: () => ReturnType<$>, payloadType: string): () => void {
