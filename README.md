@@ -92,7 +92,8 @@ Daemons will also receive messages when a new client connects.
 
 Some available daemons:
 
-[batterymonitord](https://github.com/m31u/barserver-batterymonitord)
-[networkd](https://github.com/m31u/barserver-networkd)
+[batterymonitord](https://github.com/m31u/barserver-batterymonitord) - Provides up to date status of battery
+
+[networkd](https://github.com/m31u/barserver-networkd) - Provides current SSID and status of wifi interface
 
 
