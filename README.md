@@ -49,20 +49,50 @@ on-focus-changed = ['exec-and-forget curl http://localhost:3000/update-workspace
 exec-on-workspace-change = ['/bin/bash', '-c', 'curl http://localhost:3000/update-workspaces' ]
 ```
 
-Now your bar client can connect to the bar-server using websockets at `ws://localhost:3000/listen`
+Now your bar client can connect to the bar-server using websockets at `ws://localhost:3000/client?name=MY_BARSERVER_CLIENT`
 
-On connection your client should send a JSON payload to register as a client
+You're client will now receive aerospace workspace and window state events
 
-`{ "type": "client", "name": "MY_STATUS_BAR" }`
+```{
+  "type": "UPDATE_WORKSPACES",
+  "data": [
+      {
+         "workspace": "1",
+         "focused": false,
+         "windows": [
+           {
+             "app": "Ghostty",
+             "id": 781,
+             "workspace": "1"
+           }
+         ]
+     }
+    ...
+  ]
+}
+```
+
+Aswell as any daemon events that are sent
 
 ## Daemons
 
-Additional info sources can provide status info to the servers clients through use of daemons
+Additional info sources can provide status info to the servers clients through use of custom daemon
 
-When developing a daemon you should follow a simple websocket protocol
+Daemons are external services that connect to the daemon listener on bar-server
 
-1. Connect to the server through websockets at `ws://localhost:3000/listen`.
-2. Register itself as a daemon `{ "type": "daemon", "name": "MY_CUSTOM_DAEMON" }`
-3. The daemon can send status info updates clients `{ "type": "MY_CUSTOM_EVENT_TYPE", "data": { \* Some event data*\}}`. Daemons will also receive messages when a new client connects.
+Connect to the server through websockets at `ws://localhost:3000/daemon?name=MY_DAEMON_NAME`.
+
+The daemon can send status info updates clients 
+
+`{ "type": "MY_CUSTOM_EVENT_TYPE", "data": { \* Some event data*\}}`.
+
+Daemons will also receive messages when a new client connects.
+
+`{ "type": "REGISTER_CLIENT", "name": "CLIENT_NAME" }`
+
+Some available daemons:
+
+[batterymonitord](https://github.com/m31u/barserver-batterymonitord)
+[networkd](https://github.com/m31u/barserver-networkd)
 
 
