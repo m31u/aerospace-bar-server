@@ -1,6 +1,15 @@
 import { serve, $, type ServerWebSocket } from 'bun'
 import { workspaceCommand } from './commands.ts'
 
+function upgrade(req: Request, server: ReturnType<typeof serve>) {
+	if (server.upgrade(req, { data: { url: req.url } })) {
+		return
+	}
+
+
+	return new Response("Upgrade failer", { status: 500 })
+}
+
 const server = serve({
 	routes: {
 		"/update-workspaces": () => {
@@ -19,68 +28,36 @@ const server = serve({
 
 			return res
 		},
-		"/listen": (req, server) => {
-			if (server.upgrade(req)) {
-				return
-			}
-
-			return new Response("Upgrade failed", { status: 500 })
-		}
+		"/client": upgrade,
+		"/daemon": upgrade
 	},
 	websocket: {
-		open(ws) {
-			ws.send(JSON.stringify({ message: "WAITING_FOR_REGISTRATION" }))
+		open(ws: ServerWebSocket<{ url: string }>) {
+			const url = new URL(ws.data.url)
+			const name = url.searchParams.get("name")
+
+			if (url.pathname == "/client" && name) {
+				ws.subscribe("state")
+				workspaces()
+				server.publish("client_connection", JSON.stringify({ type: "REGISTER_CLIENT", name }))
+			}
+
+			if (url.pathname == "/daemon" && name) {
+				ws.subscribe("client_connection")
+				server.publish("state", JSON.stringify({ type: "REGISTER_DAEMON", data: name }))
+			}
+
 			return
 		},
-		message(ws, message) {
-			const data = JSON.parse(message.toString())
+		message(ws: ServerWebSocket<{ url: string }>, message) {
+			const url = new URL(ws.data.url)
 
-			if (isRegisterMessage(data)) {
-				handleRegisterNewConnection(ws, data)
+			if (url.pathname == "/daemon") {
+				server.publish("state", message)
 			}
-
-			if (isDaemonPayload(data)) {
-				server.publish("state", JSON.stringify(data))
-			}
-
 		}
 	}
 })
-
-function handleRegisterNewConnection(ws: ServerWebSocket<unknown>, data: RegisterMessage) {
-	if (data.type === "daemon") {
-		ws.subscribe("client_connection")
-		server.publish("state", JSON.stringify({ type: "REGISTER_DAEMON", data: data.name }))
-	}
-
-	if (data.type === "client") {
-		ws.subscribe("state")
-		workspaces()
-		server.publish("client_connection", JSON.stringify({ type: "REGISTER_CLIENT", name: data.name }))
-	}
-
-	ws.send(JSON.stringify({ message: `${data.type.toUpperCase()}_REGISTRATION_COMPLETE` }))
-}
-
-type RegisterMessage = {
-	type: "daemon" | "client",
-	name: String
-}
-
-function isRegisterMessage(data: any): data is RegisterMessage {
-	return data.hasOwnProperty("type") &&
-		(data.type == "daemon" || data.type == "client") &&
-		data.hasOwnProperty("name")
-}
-
-type DaemonPayload = {
-	type: String,
-	data: any
-}
-
-function isDaemonPayload(data: any): data is DaemonPayload {
-	return data.hasOwnProperty("type") && data.hasOwnProperty("data")
-}
 
 function ShellCommandPublisher(shellOutput: () => ReturnType<$>, payloadType: string): () => void {
 	return () => {
