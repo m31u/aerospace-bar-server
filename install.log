@@ -1,9 +1,0 @@
-[22:35:52 2025-08-24] FETCHING Version 2.41.0
-[22:35:52 2025-08-24] CREATING /Users/blu/.spicetify
-[22:35:52 2025-08-24] DOWNLOADING https://github.com/spicetify/cli/releases/download/v2.41.0/spicetify-2.41.0-darwin-arm64.tar.gz
-[22:36:11 2025-08-24] EXTRACTING /Users/blu/.spicetify/spicetify.tar.gz
-[22:36:11 2025-08-24] SETTING EXECUTABLE PERMISSIONS TO /Users/blu/.spicetify/spicetify
-[22:36:11 2025-08-24] REMOVING /Users/blu/.spicetify/spicetify.tar.gz
-[22:36:11 2025-08-24] APPENDING /Users/blu/.spicetify to PATH in /Users/blu/.zshrc
-[22:36:11 2025-08-24] spicetify v2.41.0 was installed successfully to /Users/blu/.spicetify
-[22:36:11 2025-08-24] Run 'spicetify --help' to get started
