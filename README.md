@@ -96,4 +96,4 @@ Some available daemons:
 
 [networkd](https://github.com/m31u/barserver-networkd) - Provides current SSID and status of wifi interface
 
-
+[mediaremoted](https://github.com/m31u/barserver-mediaremoted) - Provides info from MediaRemote
