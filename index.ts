@@ -1,13 +1,27 @@
 import { serve, $, type ServerWebSocket } from 'bun'
 import { workspaceCommand } from './commands.ts'
+import { date, string } from 'astro/zod'
 
 function upgrade(req: Request, server: ReturnType<typeof serve>) {
-	if (server.upgrade(req, { data: { url: req.url } })) {
+	const url = new URL(req.url)
+	const name = url.searchParams.get("name")
+	const path = url.pathname
+
+	if (server.upgrade(req, { data: { name, path } })) {
 		return
 	}
 
 
 	return new Response("Upgrade failer", { status: 500 })
+}
+
+function parseParmater(input: string): any {
+	try {
+		return JSON.parse(input)
+	}
+	catch {
+		return input
+	}
 }
 
 const server = serve({
@@ -17,42 +31,48 @@ const server = serve({
 			return new Response("success")
 		},
 		"/command": (req, server) => {
-			const command = (new URL(req.url)).searchParams.get("command")
-			server.publish("state", JSON.stringify({ type: command }))
+			const params = (new URL(req.url)).searchParams
+			const payload: { type?: string, data?: { [key: string]: any } } = {}
+
+			params.forEach((value, key) => {
+				if (key === "command") {
+					payload.type = value
+					return
+				}
+				if (payload.data === undefined) {
+					payload.data = {}
+				}
+				payload.data[key] = parseParmater(value)
+			})
+
+			server.publish("state", JSON.stringify(payload))
 			return new Response("success")
 		},
 		"/heartbeat": () => {
 			const res = new Response("alive")
-
 			res.headers.set('Access-Control-Allow-Origin', '*')
-
 			return res
 		},
 		"/client": upgrade,
 		"/daemon": upgrade
 	},
 	websocket: {
-		open(ws: ServerWebSocket<{ url: string }>) {
-			const url = new URL(ws.data.url)
-			const name = url.searchParams.get("name")
-
-			if (url.pathname == "/client" && name) {
+		open(ws: ServerWebSocket<{ name: string, path: string }>) {
+			if (ws.data.path == "/client" && ws.data.name) {
 				ws.subscribe("state")
 				workspaces()
-				server.publish("client_connection", JSON.stringify({ type: "REGISTER_CLIENT", name }))
+				server.publish("client_connection", JSON.stringify({ type: "REGISTER_CLIENT", data: ws.data.name }))
 			}
 
-			if (url.pathname == "/daemon" && name) {
+			if (ws.data.path == "/daemon" && ws.data.name) {
 				ws.subscribe("client_connection")
-				server.publish("state", JSON.stringify({ type: "REGISTER_DAEMON", data: name }))
+				server.publish("state", JSON.stringify({ type: "REGISTER_DAEMON", data: ws.data.name }))
 			}
 
 			return
 		},
-		message(ws: ServerWebSocket<{ url: string }>, message) {
-			const url = new URL(ws.data.url)
-
-			if (url.pathname == "/daemon") {
+		message(ws: ServerWebSocket<{ name: string, path: string }>, message) {
+			if (ws.data.path === "/daemon") {
 				server.publish("state", message)
 			}
 		}
