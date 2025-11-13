@@ -1,6 +1,5 @@
 import { serve, $, type ServerWebSocket } from 'bun'
 import { workspaceCommand } from './commands.ts'
-import { date, string } from 'astro/zod'
 
 function upgrade(req: Request, server: ReturnType<typeof serve>) {
 	const url = new URL(req.url)
